@@ -1,0 +1,16 @@
+Approach 1: Canny Edge detection
+- Could get edges of the cones, form them into triangles, calculate their cetroid and then draw aline between them all
+- I was able to draw the image with edges, but quickly realized it would be cumbersome to try to figure out which edges are lines of triangles
+
+Approach 2: Color isolation + Contour detection
+- Could threshold image to only have the colors of the cones, then use contour detection to draw contours around the cones,
+then use moments to get the center's of the cones, then use the centers as points
+- Problem I am running into is having multiple points drawn on a single cone, could distance check each one but that is not very efficient 
+-
+
+Approach 3: Contour detection
+Approach 4: train a machine learning model to recognize cones? Maybe use a cascade classifier?
+
+New Approach:
+- Create image with just cones through color isolation
+- use contour detection to find triangles
