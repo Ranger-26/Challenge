@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from scipy.optimize import curve_fit
+
 #takes in an image and creates a new image with just the cones using color thresholding
 def color_isolation(image_src):
     #convert the frame to hsv
@@ -21,11 +22,9 @@ def color_isolation(image_src):
 
 
 def contour_detection(image_src):
-    #get the image with it's pixels filtered
+    #get the image with it's pixels filtered to only show the red cones
     img_filtered = color_isolation(image_src)
     img_filtered = cv2.erode(img_filtered, np.ones((2, 2), np.uint8), iterations=1)
-    #convert image to greyscale
-    img_gray = cv2.cvtColor(img_filtered, cv2.COLOR_BGR2GRAY)
     
     kernel = np.ones((5, 5))
     img_thresh_opened = cv2.morphologyEx(img_filtered, cv2.MORPH_OPEN, kernel)
@@ -38,7 +37,7 @@ def contour_detection(image_src):
     contours, hierarchy = cv2.findContours(np.array(img_edges), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     points_list = []
-    
+    #calculate the centerioids of the counturs and add to a list of points 
     for c in contours:
         # compute the center of the contour
         M = cv2.moments(c)
@@ -52,11 +51,8 @@ def contour_detection(image_src):
             points_list.append((cX, cY))
         except:
             continue
-        # draw the contour and center of the shape on the image
-        #cv2.drawContours(image_src, [c], -1, (0, 255, 0), 2)
-        #cv2.circle(image_src, (cX, cY), 7, (255, 255, 255), -1)
     
-    #calc_points(points_list)
+    #split up all the points based on if they are on the left or right side
     pointsLeft, pointsRight = organize_points(points_list, get_symetry_line(points_list))
     
     #get left line
@@ -65,13 +61,13 @@ def contour_detection(image_src):
     print(params)
     
     
-    #draw lines
+    #draw lines for left and right points
     image_src = cv2.line(image_src, pointsLeft[0], pointsLeft[-1], (255,0,0), 5)
-    
-
     image_src = cv2.line(image_src, pointsRight[0], pointsRight[-1], (255,0,0), 5)
     return image_src
 
+#finds the coordinate that has the lowest y-value and returns it's x value
+#The x value is used as a dividing line to check if points should be in the left or right line
 def get_symetry_line(points_list):
     #find the first coordinate with the lowest y coordinate
     lowest_y_coord_1 = 2**31 - 1
@@ -82,6 +78,7 @@ def get_symetry_line(points_list):
             lowest_y_coord_1 = points_list[i][1]
     return points_list[index][0]
 
+#organizes points
 def organize_points(points_list, symmetry_line):
     l1 = []
     l2 = []
@@ -94,12 +91,15 @@ def organize_points(points_list, symmetry_line):
             l2.append(points_list[i])
     return (l1, l2)
 
+#takes in x and y data,and maps that data to a linear function
 def get_line_curve(xData, yData):
     def func(x,m,b):
         return m*x + b
     list = curve_fit(func ,np.array(xData), np.array(yData))
     return (list[0], list[1])
 
+
+#splits a list of tuples which are xy points into two lists, one containg all x coords, one contianing all y coords
 def split_data_xy(data):
     xData = []
     yData = []
